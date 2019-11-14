@@ -1,0 +1,881 @@
+<!-- This is the default ATLAS template. 
+Please modify it in the sections indicated to create your topic!
+If you have any comments/complaints about this template, then please email me:
+edward.moyse at cern.ch
+--> 
+
+
+<!-- By default the title is the WikiWord used to create this topic !-->
+<!-- if you want to modify it to something more meaningful, just replace %TOPIC% below with i.e "My Topic"!-->
+---+!!The !AtlasSetup Reference Manual
+
+This is the Reference Manual of the new =AtlasSetup= (for cmake releases). For the old asetup which is able to set up cmt releases, please go to AtlasSetupReferenceCMT for reference. Go to the AtlasSetup page for the Quick Start Guide.
+%TOC%
+%STARTINCLUDE%
+
+This documentation corresponds to =AtlasSetup-01-00-36=.
+
+Please report any suspected problems to [[mailto:yesw@bnl.gov][Shuwei Ye]].
+
+---+ 1. Introduction
+
+The =AtlasSetup= package is designed to allow both users and developers to setup an environment for working with ATLAS releases. This is the detailed reference manual that describes all features and options.
+
+---++ 1.1 Releases types
+
+There are 2 release types:
+
+   * Stable releases: identified by its release number. There are 2 kinds of stable releases: old cmt releases and new cmake releases.
+
+   * Nightly releases: identified by its branch name and timestamp, or relN/rel_N (for old cmt releases).  All on cvmfs are cmake releases, while there are still a few cmt releases on CERN AFS.
+
+The way to set up the release env for cmt releases is different from that
+to set up the env for cmake releases. asetup will automatically determine
+the release type, decide to use the corresponding way. But the options/tags
+are different between them. If you like, you can use the option =--cmt= to 
+forcefully use the old cmt asetup. Please refer to AtlasSetupReferenceCMT 
+for the old cmt asetup.
+
+---+ 2. Using asetup
+
+---++ 2.1 !AtlasSetup location and version
+
+The envvar *AtlasSetup* points to the location of !AtlasSetup.
+
+You can get the tag version of asetup you are using by:
+<blockquote> <verbatim>
+% asetup --version
+AtlasSetup-01-00-36
+</verbatim></blockquote>
+
+Regarding the deployment procedure, there are 2 types of !AtlasSetup version: 
+*production* version, and *beta* version, which is usually a testing version prior 
+to being deployed intoproduction. And each version is deployed in both CVMFS 
+and CERN AFS,
+
+---+++ 2.1.1 Using production version
+
+You can use the *production* version of asetup on *cvmfs* in the following way:
+<verbatim>
+setupATLAS
+asetup
+</verbatim>
+
+Users are recommended to use asetup on cvmfs, but if you like to asetup on *CERN AFS* for any reason, you can set up:
+
+<verbatim>
+export AtlasSetup=/afs/cern.ch/atlas/software/dist/AtlasSetup
+alias asetup='source $AtlasSetup/scripts/asetup.sh'
+</verbatim>
+
+---+++ 2.1.2 Using beta version
+
+To use the *beta* version of asetup on *cvmfs*, you need define the env variable =ALRB_asetupVersion=testing=, that is:
+<verbatim>
+export ALRB_asetupVersion=testing
+setupATLAS
+asetup
+</verbatim>
+
+or 
+
+<verbatim>
+setupATLAS
+lsetup -a testing asetup
+asetup
+</verbatim>
+
+To use the *beta* version on *CERN AFS*, you can set up
+<verbatim>
+export AtlasSetup=/afs/cern.ch/atlas/software/dist/beta/AtlasSetup
+alias asetup='source $AtlasSetup/scripts/asetup.sh'
+</verbatim>
+
+---++ 2.2 Input to asetup command
+
+There are 2 types of input source to asetup:
+
+   * Command line argument/option, which will be outlined here first.
+   * Different configurations: site, under $HOME, or under current work directory, which will be discussed in details later.
+
+The tags in the argument is delimited by either *comma* ',' or *space*. For example,
+<blockquote> <verbatim>
+asetup master,Athena,latest
+asetup master Athena,latest
+</verbatim> </blockquote>
+
+In the argument, normally you need specify at least 2 kinds of information: project name, release name. For nightlies release, you need also specify branch name, while it is not needed for stable release because it would be automatically extracted from the given release name. The release name could be missing in the argument in a special case which will be explained below.
+
+
+
+---++ 2.3 Some asetup basic examples
+
+
+---+++ 2.3.1 Basic usage help
+
+   You can get the following basic usage help on asetup by running "asetup -h".
+
+<blockquote> <verbatim>
+Usage: asetup [options] [tags]
+
+Options:
+  -h, --help            show this help message and exit
+  --version             Print out the asetup version
+  --printLast, --printLastSession
+                        Print out the last saved session info under PWD
+  --listRemovedTags     Print out the list of removed old asetup tags
+  --listRemovedOpts, --listRemovedOptions
+                        Print out the list of removed old asetup options
+  --releasebase=<dir>, --releasepath=<dir>
+                        Specify an exact path to the release bypassing the
+                        area search
+  --helpMoreOn=<group>  The group name for help printout, valid groups: [CMAKE
+                        ,RELLOC,ASETUP,DB,PLATFORM,RELNAME,ENVVAR,COMPILER,ALL],
+                         where 'All' will print all groups options
+
+Examples: asetup Athena,22.0.0     # set up stable release 22.0.0
+          asetup Athena,master,latest  # set up the latest master nightlies
+          asetup Athena,master,r08     # set up the master nightlies of date 08
+
+       or asetup source otherScript    # source additional user script
+
+For further details, look at 
+  https://twiki.cern.ch/twiki/bin/view/AtlasComputing/AtlasSetupReference
+</verbatim> </blockquote>
+
+To get the full lengthy list of all options, you could specify the group help option *--helpMoreOn=All*.
+
+Each option would be explained below under its own option group.
+
+---+++ 2.3.2 Example of release env setup
+
+---++++ 2.3.2.1 Setup of stable release
+
+To set up a stable release, you need provide a project name such as =Athena= and a release number such as =22.0.0= to asetup.
+
+<blockquote> <verbatim>
+% asetup Athena,22.0.0
+Using Athena/22.0.0 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/22.0
+</verbatim></blockquote>
+
+To set up the release of =AnalysisBase,21.2.48=, you can do
+<blockquote> <verbatim>
+% asetup AnalysisBase,21.2.48
+Using AnalysisBase/21.2.48 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/21.2
+</verbatim></blockquote>
+
+---++++ 2.3.2.2 Setup of nightly release
+
+To setup a nightly release, you need specify a project name, a branch name and a release name in the syntax of =ryyyy-mm-ddTtttt= such as =r2018-10-28T2310=. The year, month, and time can be omitted. You can ask for the latest nightly release using the tag =latest=. For back compatibility, the syntax without the prefix 'r', i.e. =yyyy-mm-ddTtttt=, is also allowed.
+
+For example, to set up the nightly release =2018-10-28T2310= for project =Athena= under branch =master=, you can run
+<verbatim>
+asetup Athena,master,r10-28
+</verbatim>
+
+If today (says, =2018-11-15=) and the required date (says =2018-11-10=) is in the same month, or the the day of today &lt; the day of the required date (says =2018-10-28=), and the month of required date is just last month, then the month can also be omitted, that is,
+<verbatim>
+asetup Athena,master,r10-28
+or
+asetup Athena,master,r28
+</verbatim>
+
+For example, to set up the latest nightly release of project =AthAnslysis= under branch =21.2=:
+<blockquote> <verbatim>
+% asetup AthAnalysis,21.2,latest,slc6
+Using AthAnalysis/21.2.51 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas-nightlies.cern.ch/repo/sw/21.2/2018-10-31T0333
+</verbatim></blockquote>
+
+Please be aware that you need specify the =os= tag for nightly releases if the required =os= is different from the OS of the machine where asetup runs.
+
+---++++ 2.3.2.3 Setup of additional user package(s)
+
+After setting up an atlas release, you might want to source additional user package(s). You can run in the following way to add those scripts into the saved session info file.
+<blockquote> <verbatim>
+% asetup source myPackage/setup.sh
+</verbatim></blockquote>
+
+The above command will do two things:
+   1. source myPackage/setup.sh
+   2. add "source myPacakge/setup.sh" into the saved file =.asetup.save= under $PWD.
+
+So *next time* you can *restore* both the release setup and package setup in *one single command "asetup"* without any argument.
+
+---++++ 2.3.2.4 Setup of previous session release
+
+You may wish to the same release env under a work directory as you did before. You can do so by simply run =asetup= witht empty argument under that work directory, 
+or specify only with those print-control options, =--debugprint=, =--silent/--quiet=, =--printlevel=, and =--debugfunctions= or simulation option =--simulate=.
+However, if the parameter *tags* is found in the current work directory configuration file =$PWD/.asetup=, asetup will take those tags, and it is not longer considered 
+as empty argument.
+
+Please note that if you use the tag *latest* to set up a nightly release env, the previous session release would be just that release used, might not be the =latest= anymore today.
+
+If you like to see the last saved session info, you can do by
+<blockquote> <verbatim>
+% asetup --printLast               
+The last saved release under the current directory is:
+        Athena/22.0.0 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/22.0
+
+Afterwards, the following epilog script(s) will also be sourced
+        /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/swConfig/asetup/asetupEpilog.sh
+        myPackage/setup.sh
+        myPackage2/setup.sh
+</verbatim></blockquote>
+
+---+++ 2.3.3 Example of non-release env setup
+
+If you would like to set up an env to build a release, you can:
+<verbatim>
+asetup cmakesetup,none,gcc62
+</verbatim>
+
+In the above example, asetup would use the tag gcc62 to extract gcc version. You can override the gcc version via option --gccversion=6.3.0. You can also specify the cmake version using --cmakeversion=3.9.6. 
+
+
+---+3. Available command tags and options
+
+There are many tags and options allowed in asetup. The options are divided into 8 groups. And they are explained below.
+
+But more than 200 tags and more than 200 options used for the cmt releases have bee deprecated and removed. If you tried to use those deprecated tags and/or options for cmake releases, you would get warning message:
+
+<blockquote> <verbatim>
+% asetup Athena,22.0.0,notest,cvmfs,ignore -v --STANDALONE --cache --save
+AtlasSetup(WARNING): ignore the following deprecated options in cmake releases:
+        ['-v', '--STANDALONE', '--cache', '--save']
+AtlasSetup(WARNING): Deprecased tag "ignore" ignored in cmake releases
+AtlasSetup(WARNING): Deprecased tag "notest" ignored in cmake releases
+AtlasSetup(WARNING): Deprecased tag "cvmfs" ignored in cmake releases
+Using Athena/22.0.0 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/22.0
+</verbatim></blockquote> 
+
+---++3.1 Tags for asetup command
+
+There are 2 types of tags allowed:
+
+ 1. Not derived from option names:
+
+   * 'slc\d+', 'centos\d+', such as =slc6=.
+   * 'gcc\d+', 'clang\d+', 'llvm\d+', such as =gcc62=.
+   * release number in format 'n.n.n(.n(.n))', such as =22.0.0=
+   * nightly release name in format 'r[0-9][0-9]*', such as =r09=, or =r10-15=.
+   * branch name available under nightly release directory, such =master=, =21.2=.
+   * project name, such as =Athena=, =AnalyisBase=, etc.
+
+ 2. Derived from long option names: they are equivalent to function as 
+the corresponding long option (with leading '--'). 
+
+Below is the full list of these tags. The ones with trailing '=' require 
+to take an argument. Please refer to the corresponding option section for 
+its detailed function.
+<blockquote> <verbose>
+   * *'32'*, *'64'*,  check the option group [[#GroupPlatform][platform]] for details.
+   * *'asconfig='*, check the option group [[#GroupPlatform][platform]] for details.
+   * *'branch='*, specify a branch name.
+   * *'clanglocation='*, override the clang default location.
+   * *'clangversion='*, specify a clang version.
+   * *'cmakearea='*, check the option group [[#GroupCmake][cmake]] for details.
+   * *'cmakeonly'*,  set up cmake only, implying nosetuprelease.
+   * *'cmakesetup'*, set up cmake.
+   * *'cmakeversion='*, specify a cmake version.
+   * *'compileronly'*, *'cconly'*, set up compiler only.
+   * *'compilers='*, check the option group [#GroupCompiler][compiler]] for details.
+   * *'dbarea='*, check the option group [[#GroupDB][db]] for details.
+   * *'dbg'*, *'debug'*, check the option group [[#GroupPlatform][platform]] for details.
+   * *'dbrelease='*, check the option group [#GroupCompiler][compiler]] for details.
+   * *'envvarsNotSet='*, check the option group [[#GroupEnvvar][envvar]] for details.
+   * *'forceconfig'*, check the option group [[#GroupPlatform][platform]] for details.
+   * *'frontier='*, check the option group [[#GroupEnvvar][envvar]] for details. (will be moved to db)
+   * *'frontierlevel='*, check the option group [[#GroupEnvvar][envvar]] for details. (will be moved to db)
+   * *'gcclocation='*, check the option group [#GroupCompiler][compiler]] for details.
+   * *'gccversion='*, check the option group [#GroupCompiler][compiler]] for details.
+   * *'here'*, an alias of testarea=$pwd.
+   * *'latest'*, *'latestrelease'*, ask for the latest nightly release.
+   * *'nocmakeonly'*, do not set up cmake only.
+   * *'nocmakesetup'*, do not set up cmake.
+   * *'nocompileronly'*, do not set up compiler.
+   * *'nosetuprelease'*, 'none', do not setup the release env.
+   * *'opt'*, check the option group [[#GroupPlatform][platform]] for details.
+   * *'os='*, check the option group [[#GroupPlatform][platform]] for details.
+   * *'platform='*, check the option group [[#GroupPlatform][platform]] for details.
+   * *'poolcondpath='*, check the option group [[#GroupDB][db]] for details.
+   * *'project='*, specify a project name.
+   * *'siteroot='*, specify the directory of envvar SITEROOT.
+   * *'release='*, specify a release name.
+   * *'testarea='*, create file "CMakeLists.txt" under that directly if not exist.
+   * *'traceEnvvar='*, check the option group [[#GroupEnvvar][envvar]] for details.
+   * *'setup'*, *'setuprelease'*, set up the release env.
+   * *'userpriority'* check the option group [[#GroupEnvvar][envvar]] for details.
+</verbose> </blockquote>
+
+#GroupRelname
+---++3.2  Options on release name (Group relName)
+
+The group *relName* covers the basic info required to set up a release. You can run the command *asetup --helpMoreOn=relName*, to get the option list for this group:
+<blockquote> <verbatim>
+relName Options:
+  Release type/number, branch (nightly) name
+
+  -b <branch>, --branch=<branch>
+                        The *nightlies* branch name (e.g. 21.6, master, 
+                        21.0-TrigMC); Long option name can also input without
+                        the leading '--'
+  --latestrelease, --latest
+                        Use latest nightlies release (default False); Long
+                        option name can also input without the leading '--'
+  -p <project>, --project=<project>
+                        The project name (e.g. AtlasCore or TopPhys); Long
+                        option name can also input without the leading '--'
+  -r <release>, --release=<release>
+                        The release name (e.g. 22.0.0, or timestamp
+                        nightly like rMM-DD, rDD); Long option name can also
+                        input without the leading '--'
+</verbatim> </blockquote>
+
+All the above 4 options can be input in both option or non-option tag way, e.g., 
+<verbatim>
+    asetup -b master --latest --project=Athena
+or
+    asetup master,latest,Athena
+</verbatim>
+
+---+++3.2.1 Branch Name
+
+The branch name is not needed for stable release, it would be automatically extracted from the given release name.
+The branch name could contain subdirs for private or group nightlies release, such as *local/trigger/21.1*, for example,
+<verbatim>
+asetup local/trigger/21.1,AthenaP1,latest
+</verbatim>
+
+---+++3.2.2 Release Name
+
+ The release name is 
+
+   * *stable releases:* is release number, in the format of n.n.n (such as 22.0.0) or n.n.n.n[.n] (such as 21.2.10.2)
+   * *nightlies releases:* is the timestamp, in the format of rDD (such as =r06=), rMM-DD (such as =r07-06=), rYYYY-MM-DD (=r2018-07-06=), rYYYY-MM-DDTtttt (such as =r2018-07-06T2110=), or =latest=. For the format rDD, asetup will automatically complete the month (current month or last month if DD > current day of today) . For example, if today was July 26, 2018, *r28* would stand for *June 28, 2018*. For convenience, the syntax without the prefix 'r', that is, YYYY-MM-DDTtttt , is also supported.
+
+#GroupRelloc
+---++3.3 Options on release location (Group relLoc)
+
+<blockquote> <verbatim>
+relLoc Options:
+  Release/externals location
+
+  --nightliesarea=<dir>
+                        Override the default nightlies releases location
+  --nightliesonly       Restrict the search for a release to nightlies release
+                        only
+  --releasebase=<dir>, --releasepath=<dir>
+                        Specify an exact path to the release bypassing the
+                        area search
+  --releasesarea=<dir>  Override the default stable releases location
+  --stableonly    Restrict the search for a release to stable release only
+  --tdaqarea=<dir>      Override the tdaq base directory ($TDAQ_RELEASE_BASE)
+                        in the release; Long option name can also input
+                        without the leading '--'
+  --testarea=<dir>, --workarea=<dir>
+                        Set location of the test/work area, or you can use tag
+                        'here' to use PWD as test area; Long option name can
+                        also input without the leading '--'
+
+</verbatim> </blockquote>
+
+There are 2 types of releases:
+   * Stable releases, with the default location of */cvmfs/atlas.cern.ch/repo/sw/software/*, you can override that with option *--releasesarea*.
+   * Nightlies releases, with the default location of */cvmfs/atlas-nightlies.cern.ch/repo/sw/*, you can override that with option *--nightliesarea*.
+
+The type (stable or nightlies) of release is automatically determined by !asetup based on the input release name. Users can limit asetup to search for one specific release type via option *--stableonly* or *--nightliesonly*.
+
+You can also use option *--releasebase* to specify the full path of a release, including the branch directory. For example,
+
+<verbatim>
+asetup --releasebase=/cvmfs/atlas-nightlies.cern.ch/repo/sw/local/simulation/21.0 AthSimulation,latest,slc6
+</verbatim>
+
+You can also include the nightly release name in the releasebase path:
+
+<blockquote> <verbatim>
+% asetup --releasebase=/cvmfs/atlas-nightlies.cern.ch/repo/sw/local/simulation/21.0/2018-10-03T2100 Athena,slc6
+Using Athena/21.0.69 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas-nightlies.cern.ch/repo/sw/local/simulation/21.0/2018-10-03T2100
+</verbatim> </blockquote>
+
+#GroupPlatform
+---++3.4 Options on platform (Group platform)
+
+<blockquote> <verbatim>
+platform Options:
+  Platform configuration CMTCONFIG, BINARY_TAG
+
+  --32, --64       Force 32-bit or 64-bit mode; Long option name can also
+                        input without the leading '--'
+  --asconfig=<CONFIG>, --platform=<CONFIG>
+                        Force the PLATFORM setting, such as
+                        x86_64-slc6-gcc62-opt; Long option name can also input
+                        without the leading '--'
+  --forceconfig   Force PLATFORM from existing environment BINARY_TAG, or CMTCONFIG;
+                        Long option name can also input without the leading '--'
+  --opt, --dbg, --debug
+                        Optimized (default) or debug mode; Long option name
+                        can also input without the leading '--'
+  --os=<os>             The operating system <os>; Long option name can also
+                        input without the leading '--'
+</verbatim> </blockquote>
+
+The platform for a given release is something like =x86_64-slc6-gcc62-opt=, composed of 4 parts delimited by dash(-):
+   1. 32-bit or 64-bit. For 64-bit, this part would =x86_64=, for 32-bit, this part would be =i686=.
+   1. OS part, =slc6= in the above example.
+   1. Compiler part, =gcc62= in the above example.
+   1. Optimized or debug mode, =opt= in the above example.
+
+You can specify the platform individually or wholly via option *--asconfig*. You can also specify the platform using option *--forceconfig* and with defined envvar of *CMTCONFIG* or *BINARY_TAG*.
+
+#GroupAsetup
+---++3.5 Options on asetup behavior (Group asetup)
+
+<blockquote> <verbatim>
+asetup Options:
+  AtlasSetup behavior
+
+  --printLast, --printLastSession
+                        Print out the last saved session info under PWD
+  --listRemovedOpts, --listRemovedOptions
+                        Print out the list of removed old asetup options
+  --listRemovedTags     Print out the list of removed old asetup tags
+  --printlevel=<level>  Specify verbosity print level (default is 0)
+                        <0:FATAL error; 0:Warning & basis msg; 
+                        1:config warning; 2:Verbose
+  --prolog=<scriptFilename>, --shellprolog=<scriptFilename>
+                        Specify a user prolog script to be sourced prior to
+                        release setup (default is None)
+  --silent, --quiet     Perform silently, suppressing any error or warning
+                        messages
+  --debugprint          Debug print mode (default is not debug)
+  --debugfunctions=<list>
+                        List of functions to generate debug information (or
+                        <all>) if --debugprint not enabled
+  --setuprelease, --setup, --nosetuprelease, --none
+                        Perform release setup (default True); Long option name
+                        can also input without the leading '--'
+  --restore, --notrestore
+                        Restore the last saved session in this directory
+  --simulate            Show me what you would do, but do not actually do it
+  --siteconfigfile=<file>, --siteconfig=<file>
+                        Specify the site configuration file
+                        (default=$AtlasSetupSiteCMake or $AtlasSetup/../asetupSite/.asetup), 
+                        then apply $HOME/.asetup and $PWD/.asetup
+  --inputconfig=<inputConfigFile>, --input=<inputConfigFile>
+                        Read configuration from file <inputConfigFile>, and
+                        bypass $HOME/.asetup and $PWD/.asetup
+  --bypasssitesetup, --bypasssite
+                        Bypass the site configuration setup file
+  --dumpconfig, --nodumpconfig
+                        Dump the configuration (default False)
+</verbatim> </blockquote>
+
+This group options control the asetup behavior, and are composed of 
+the following 3 subgroups:
+
+ 1. Options to control printout:
+
+The options, *--printLast* and *--printLastSession*, print out the saved session info under the work directory.
+
+The options, *--listRemovedOpts* and *--listRemovedTags*, list the removed old asetup options/tags.
+
+The options, *--printlevel* and *--silent/--quiet* (equivalent to *--printlevel=-1*),
+control the level of normal info printing.
+
+The option *--debugprint* turns on the printout of debug info. 
+If you like debug info for selective functions, you can list 
+those function names in the option *--debugfunctions*, 
+delimited by comma, with each function name in the syntax 
+of *Filename:FunctionName*, such as =AtlInputArgs.py:parse=.
+
+ 2. Options to control release setup:
+
+On default, asetup would try to look for a release 
+and set up the found release env. If you need set up non-release 
+env, such as env of a compiler or cmake, you can apply
+the option *--none/--nosetuprelease* (or just  *none*).
+
+The option *--restore/--notrestore" tells asetup whether or not 
+to set up the last session env under the current work directory.
+Empty argument/option other than those print-control options, 
+=--debugprint=, =--silent/--quiet=, =--printlevel=, and =--debugfunctions= 
+or simulation option =--simulate=, would be equivalent to =--restore= 
+if no parameter *tags* is found in the current work directory configuration 
+file =$PWD/.asetup=.
+
+The option *--prolog/--shellprolog* asks asetup to insert a setup script between 
+asetup original shell env restoration and release env setup.
+
+If you had problem with asetup, you can apply the option *--simulate*, 
+to keep the generated temporary shell script and not to execute it. So you 
+could look into it to find where the problem arises from.
+
+ 3. Options to control configuration.
+
+There are 4 different sources of configurations: the one in asetup itself, 
+site, under home directory =$HOME/.asetup=, or under current work directory =$PWD/.asetup=. 
+However, you can use option *--siteconfigfile/--siteconfig* to override the 
+default site configuration defined in envvar $AtlasSetupSiteCmake, 
+or used $AtlasSetup/../asetupSite/.asetup if neither the option is provided 
+nor the envvar $AtlasSetupSiteCmake is defined,
+or use option *--bypasssitesetup/--bypasssite* to bypass site configuration.
+And you can use option *--inputconfig/--input* to override the configuration 
+under $HOME and the current work directory. If it equals to None, all private 
+configuration will not skipped.
+
+To see the resulting from all different configuration sources, you can use 
+option *--dumpconfig* to dump them which includes the source 
+for each parameter.
+
+#GroupEnvvar
+---++3.6 Options on envvar setup (Group envVar)
+
+<blockquote> <verbatim>
+envVar Options:
+  Shell environmental var setup
+
+  --LANG=<value>        Specify a LANG=<value> setting (or None)
+  --LC_ALL=<value>      Specify a LC_ALL=<value> setting (or None)
+  --envvarsNotSet=<vars>
+                        A list of envvars not to set in asetup; Long option
+                        name can also input without the leading '--'
+  --frontier=<URL>      Override the default Frontier URL; Long option name
+                        can also input without the leading '--'
+  --frontierlevel=<level>
+                        The Frontier message level; Long option name can also
+                        input without the leading '--'
+  --frontiertimeout=<secs>
+                        The Frontier timeout in secs; Long option name can
+                        also input without the leading '--'
+  --noLcgReleaseBase    Do not touch env var LCG_RELEASE_BASE at all
+  --siteroot=<dir>, --cernsiteroot=<dir>
+                        Specify the envvar SITEROOT value. But --cernsiteroot
+                        will be deprecated soon; Long option name can also
+                        input without the leading '--'
+  --traceEnvvar=<varname>
+                        Trace where the specified envvar is set/changed; Long
+                        option name can also input without the leading '--'
+  --userpriority, --user        Give the user environment variables priority over
+                        AtlasSetup ones (default=False); Long option name can
+                        also input without the leading '--'
+</verbatim> </blockquote>
+
+#GroupDB
+---++3.7 Options on release database (Group DB)
+
+<blockquote> <verbatim>
+db Options:
+  dbrelease and poolcond
+
+  --dbarea=<dir>        Override the default location of the ATLAS_DB_AREA
+                        area; Long option name can also input without the
+                        leading '--'
+  --dbrelease=<release>
+                        The DB release name (e.g. 11.1.2); Long option name
+                        can also input without the leading '--'
+  --poolcondpath=<dir>  Specify ATLAS_POOLCOND_PATH variable if release within
+                        atlassoftware hierarchy; Long option name can also
+                        input without the leading '--'
+</verbatim> </blockquote>
+
+#GroupCompiler
+---++3.8 Options on compiler setup (Group compiler)
+
+<blockquote> <verbatim>
+compiler Options:
+  --clanglocation=<dir>
+                        Override the default clang compiler location; Long
+                        option name can also input without the leading '--'
+  --clangversion=<version>
+                        The clang compiler version (default is <default>);
+                        Long option name can also input without the leading '--'
+  --compileronly, --cconly, --nocompileronly
+                        Only setup compiler in 'none' mode (default False);
+                        Long option name can also input without the leading
+                        '--'
+  --compilers=<file>    Specify a compilers configuration json file; Long
+                        option name can also input without the leading '--'
+  --gcclocation=<dir>   Override the default gcc compiler location; Long
+                        option name can also input without the leading '--'
+  --gccversion=<version>
+                        The gcc compiler version (default is <default>); Long
+                        option name can also input without the leading '--'
+  --makeflags=<value>   Specify a MAKEFLAGS=<value> setting (default=<auto>)
+</verbatim> </blockquote>
+
+The *makeflags* value controls the env variable *MAKEFLAGS* in the following way:
+   * =&lt;auto&gt;= or =&lt;automatic&gt;=, asetup will set *MAKEFLAGS* to =-j$ncores -l$nores=, where $nores is the number of cores on a machine;
+   * =&lt;none&gt;=, =none=, or =None=, asetup will keep the *MAKEFLAGS* current value;
+   *  otherwise, asetup will set *MAKEFLAGS* to the =makeflags= value.
+
+#GroupCmake
+---++3.9 Options on cmake setup (Group cmake)
+
+<blockquote> <verbatim>
+cmake Options:
+  --cmakearea=<dir>     Override the default location of cmake; Long option
+                        name can also input without the leading '--'
+  --cmakeonly, --nocmakeonly
+                        Only setup cmake, implying nosetuprelease (default
+                        False); Long option name can also input without the
+                        leading '--'
+  --cmakesetup, --nocmakesetup
+                        Force setup of cmake (default False); Long option name
+                        can also input without the leading '--'
+  --cmakeversion=<version>
+                        Override the default cmake version; Long option name
+                        can also input without the leading '--'
+</verbatim> </blockquote>
+
+---+4. env variables and system commands
+
+---++4.1 system commands like emacs
+
+Two shell function *alias_sys_exe()* and *run_sys_exe()* are defined, which makes use of ="/lib64/ld-linux-x86-64.so.2 --library-path /usr/lib64"= to run the system command.
+The other 2 shell function *alias_sys_exe_child()* and *run_sys_exe_child()* are also defined if package curl in LCG is included in envvar =LD_LIBRARY_PATH=, 
+where *run_sys_exe_child* runs system commands through emptying =LD_LIBRARY_PATH= without affecting the current process, and *alias_sys_exe_child* 
+aliases system commands through =env -u LD_LIBRARY_PATH=.
+So if the system command is not compatible with the release env, you can run use *alias_sys_exe()* to alias system commands, or use *run_sys_exe()* to run system commands 
+under incompatible release env. If the system command has already been aliased with additional option(s) and/or argument, those option(s) and argument will be carried over 
+in the new defined alias, for example:
+
+<blockquote> <verbatim>
+% alias condor_q='condor_q $USER'
+% asetup Athena,22.0.0
+Using Athena/22.0.0 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/22.0
+% alias_sys_exe condor_q
+% alias condor_q
+condor_q='/lib64/ld-linux-x86-64.so.2 --library-path /usr/lib64 /bin/condor_q $USER'
+</verbatim> </blockquote>
+
+Or you can use *run_sys_exe()* to run system command *condor_q* without defining an alias.
+
+<blockquote> <verbatim>
+% alias condor_q='condor_q $USER'
+% asetup Athena,22.0.0
+Using Athena/22.0.0 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/22.0
+% run_sys_exe condor_q
+-- Schedd: spar0102.usatlas.bnl.gov : <130.199.159.195:9618?... @ 06/24/19 10:58:53
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+
+Total for query: 0 jobs; 0 completed, 0 removed, 0 idle, 0 running, 0 held, 0 suspended 
+Total for all users: 1 jobs; 0 completed, 0 removed, 0 idle, 0 running, 1 held, 0 suspended
+</verbatim> </blockquote>
+
+The system command *emacs* has always been aliased for you.
+
+<blockquote> <verbatim>
+% alias emacs="emacs -nw"
+% asetup Athena,22.0.0
+Using Athena/22.0.0 [cmake] with platform x86_64-slc6-gcc62-opt
+        at /cvmfs/atlas.cern.ch/repo/sw/software/22.0
+% alias emacs
+emacs='/lib64/ld-linux-x86-64.so.2 --library-path /usr/lib64 /bin/emacs -nw'
+</verbatim> </blockquote>
+
+Meanwhile the emacs wrapper path on ALRB would also be prepended to $PATH, to address the problem with *git commit -a* involving emacs.
+
+<blockquote> <verbatim>
+lxplus6% asetup Athena,22.0.0
+lxplus6% which emacs
+/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/wrappers/linuxApp/emacs
+</verbatim> </blockquote>
+
+In case the package curl in LCG is included in envvar =LD_LIBRARY_PATH=, command *git* would be aliased to =env -u LD_LIBRARY_PATH git=, 
+to address the problem with *git push* if git https URL is in place.
+
+---++4.2 env variables
+
+Unless specified otherwise, asetup will set the following env variables:
+
+   1. Set *LANG* and *LC_ALL* to =C=.
+   2. Set *AtlasSetup* to the top location of asetup, 
+       <br/>set *AtlasSetupVersion* to the asetup version.
+   3. Set *BINARY_TAG* and *CMTCONFIG* to the platform
+      such as =x86_64-slc6-gcc62-opt=.
+   4. Set *MAKEFLAGS* to =-j$ncores -l$nores=, where $nores is the number of cores on a machine,
+      <br/>set *CMAKE_NO_VERBOSE* to 1,
+      <br/>set *CC* to the path of command =gcc= or =clang=.
+      <br/>set *CXX* to the path of command =g++= or =clang++=.
+      <br/>set *FC* to the path of command =gfortran=
+   5. For machines in =cern.ch= domain, set *TNS_ADMIN* 
+      to =/eos/project/o/oracle/public/admin/tnsnames.ora= if exists,
+      otherwise to =/afs/cern.ch/project/oracle/admin/tnsnames.ora=.
+   6. Set *FRONTIER_SERVER* to the output of the command 
+     "$VO_ATLAS_SW_DIR/local/bin/agis-site-info -f -s $SITE_NAME" if the output 
+     is not empty.
+   7. Set *ATLAS_POOLCOND_PATH* to =/cvmfs/atlas-condb.cern.ch/repo/conditions=,
+      <br/>set *ATLAS_DB_AREA* to =/cvmfs/atlas.cern.ch/repo/sw/database=.
+      <br/>set *DBRELEASE_OVERRIDE* to =current=.
+   8. Set release-related envvars.
+      * *AtlasReleaseType*: "stable" or "nightly".
+      * *AtlasVersion*: the release number found (including nightly release).
+      * *AtlasProject*: the project such as "Athena", "AnalysisBase", etc.
+      * *AtlasBuildStamp*: the data stamp of the release was built, which is 
+                    the release name found in case of "nightly".
+      * *AtlasBuildBranch*: the branch, such as "master", "21.0".
+      * *AtlasBaseDir* and *ATLAS_RELEASE_BASE*: the path of the release base.
+      * *AtlasArea*: the full path of final project release, please check the examples.
+      * *SITEROOT*: is set to the parent directory of the found release if subdir =sw/lcg= is found there, to be the directory specified in option --siteroot.
+      * *ATLAS_RELEASEDATA*: the path of offline ReleaseData.
+      * *LCG_RELEASE_BASE*: the base path of =LCG= release.
+      * *GAUDI_ROOT*: the full path of project =GAUDI=.
+      * *G4PATH*: the base path of package =Geant4=.
+      * *TDAQ_RELEASE_BASE*: the parent directory where subdir, =tdaq=, =tdaq-common=, or =dqm-common=, stays. First will try try the central location =/cvmfs/atlas.cern.ch/repo/sw/tdaq= (temporarily in the period of removing tdaq subdir in master nightlies), the AtlasBaseDir directory, then the SITEROOT directory (would be changed back to finally try the central location =/cvmfs/atlas.cern.ch/repo/sw/tdaq=).
+   9. Set *TestArea* to the testarea value if specified, otherwise it will set to asetup work directory where the file =.asetup.save= is saved.
+   10. Set or modify *PATH*, *LD_LIBRARY_PATH* in compiler setup and/or cmake setup.
+   11. User can also use parameter =epilog= in private confoguration or option =--userpriority=, which will be explained in the next section.
+
+Let us take 2 examples to understand the above release-related env variables.
+
+   * Example-1: *asetup Athena,22.0.0*
+
+| *envvar name*       | *value* |
+| AtlasReleaseType    | stable |
+| AtlasVersion        | 22.0.0 |
+| AtlasProject        | Athena |
+| AtlasBuildStamp     | 2018-02-21T2152 |
+| AtlasBuildBranch    | 22.0 |
+| AtlasBaseDir, ATLAS_RELEASE_BASE | /cvmfs/atlas.cern.ch/repo/sw/software/22.0 |
+| AtlasArea           | /cvmfs/atlas.cern.ch/repo/sw/software/22.0/Athena/22.0.0 |
+| SITEROOT            | /cvmfs/atlas.cern.ch/repo/sw/software/22.0 |
+| ATLAS_RELEASEDATA   | /cvmfs/atlas.cern.ch/repo/sw/software/22.0/atlas/offline/ReleaseData |
+| LCG_RELEASE_BASE    | /cvmfs/atlas.cern.ch/repo/sw/software/22.0/sw/lcg/releases |
+| GAUDI_ROOT          | /cvmfs/atlas.cern.ch/repo/sw/software/22.0/GAUDI/22.0.0/InstallArea/x86_64-slc6-gcc62-opt |
+| G4PATH              | /cvmfs/atlas.cern.ch/repo/sw/software/22.0/Geant4 |
+| TDAQ_RELEASE_BASE   | /cvmfs/atlas.cern.ch/repo/sw/software/22.0 |
+
+
+   * Example-2: *asetup Athena,master,r09-29,slc6*
+
+| AtlasReleaseType  | nightly |
+| AtlasVersion      | 22.0.1 |
+| AtlasProject      | Athena |
+| AtlasBuildStamp   | 2018-09-29T2056 |
+| AtlasBuildBranch  | master |
+| AtlasBaseDir, ATLAS_RELEASE_BASE | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master/2018-09-29T2056 |
+| AtlasArea         | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master/2018-09-29T2056/Athena/22.0.1 |
+| SITEROOT          | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master |
+| ATLAS_RELEASEDATA | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master/atlas/offline/ReleaseData |
+| LCG_RELEASE_BASE  | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master/sw/lcg/releases |
+| GAUDI_ROOT        | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master/2018-09-29T2056/GAUDI/22.0.1/InstallArea/x86_64-slc6-gcc62-opt |
+| G4PATH            | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master/Geant4 |
+| TDAQ_RELEASE_BASE | /cvmfs/atlas-nightlies.cern.ch/repo/sw/master |
+
+
+---+5. asetup Configuration
+
+Theer are 3 ways to provide site configuration in order of: 1. *--siteconfigfile/--siteconfig*; 2. *$AtlasSetupSiteCMake*; 3. $AtlasSetup/../asetupSite/.asetup.
+
+There are 3 ways to specify private configuration: *$HOME/.asetup*, *$PWD/.asetup*, or through option *--inputconfig/--input*.
+If the option *--inputconfig/--input* is specified, *$HOME/.asetup* and *$PWD/.asetup* would be skipped.
+
+---++ 5.1 Configuration Format
+Currently asetup supports the 4 following sections:
+   * *[defaults]*: where tag is specified. If there is only one *[defaults]* section, the section name can be omitted.
+   * *[aliases]*: where aliases are defined, such as =local-21.0=local/simulation/21.0,Athena=, so specifying  one tag =local-21.0= is equivalent to 2 tags of =local/simulation/21.0,Athena=.
+   * *[environment]*: where user own env variables can be defined, which would be set if option =--userpriority= is applied.
+   * *[epilog.sh]*: where to define shell statements for asetup to source at the end.
+   * *[prolog.sh]*: where to define shell statements for asetup to source after restoring back to the original shell env if applicable but prior to the release env setup.
+
+Below is an example of private configuration file:
+<blockquote> <verbatim>
+[defaults]
+os   = slc6
+arch = 64
+
+[aliases]
+local-21.0 = local/simulation/21.0,Athena
+
+[environment]
+myVar = 123
+PATH = $HOME/bin:${PATH}
+LD_LIBRARY_PATH = ${LD_LIBRARY_PATH}:$PWD/lib
+
+[epilog.sh]
+source myScript.sh
+
+[prolog.sh]
+source myProlog.sh
+</verbatim></blockquote> 
+
+Please notice that *&lt;prepend&gt;* and *&lt;append&gt;* features in old asetup have been removed in new asetup for simplification. However, you can achieve the same function in the way shown in the above example for envvar PATH and LD_LIBRARY_PATH under 
+=[environment]= section.
+
+
+---++ 5.2 Configuration Parameters
+
+Below is the list of parameters which can be configured through the section of *[defaults]*:
+   * *LANG*: default is =C=, normally you should not override.
+   * *LC_ALL*: default is =C=, normally you should not override.
+   * *arch*: 64 or 32. The default value is determined by the machine platform.
+   * *asconfig*: such as x86_64-slc6-gcc62-opt. The default value is determined from the tag =arch=, =os=, and the available release platform.
+   * *clanglocation*: The default value is =/cvmfs/sft.cern.ch/lcg/contrib/llvm=.
+   * *clangversion*: the version of compiler *clang*. There is no default value.
+   * *cmakearea*: The default value is =/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/x86_64/Cmake=. But cmake env is usually set up through *ALRB* if possible.
+   * *cmakeonly*: True or False (default). If True, only cmake would be set up, and there is no release setup.
+   * *cmakesetup*: True or False. If there is a release setup, cmakesetup would be True.
+   * *cmakeversion*: The default value is =current:<latest>:<ALRB>=. If =<ALRB>= is present, cmakesetup would be set up through *ALRB*, and the version is from the parameter *cmake* in the release file =ReleaseData=, or the default version in *ALRB*.
+   * *compileronly*: True or False (default). If True, only compiler would be set up, and there is no release setup.
+   * *compilers*: points to a compilers json file, where the compiler information is defined. The default value is None.
+   * *dbarea*: the DBRelease location with the default value of =/cvmfs/atlas.cern.ch/repo/sw/database=.
+   * *dbrelease*: the DBRelease version with default value of =current=.
+   * *debugfunctions*: the list of functions to print debug information, such as AtlInputArgs.py:parse,AtlConfig.py:buildConfig. The default is all if =isdebugprint= is applied.
+   * *envvarsNotSet*: the list of env variables not to touch in asetup. The default is None.
+   * *forceconfig*: True or False (defaut). If True, force to set PLATFORM from existing environment BINARY_TAG, or CMTCONFIG.
+   * *frontier*: the default value of *FRONTIER_SERVER* for CERN machines, which is =(serverurl=http://atlasfrontier-local.cern.ch:8000/atlr)(serverurl=http://atlasfrontier-ai.cern.ch:8000/atlr)(serverurl=http://lcgft-atlas.gridpp.rl.ac.uk:3128/frontierATLAS)(serverurl=http://ccfrontier.in2p3.fr:23128/ccin2p3-AtlasFrontier)(proxyurl=http://ca-proxy.cern.ch:3128)(proxyurl=http://ca-proxy-meyrin.cern.ch:3128)(proxyurl=http://ca-proxy-wigner.cern.ch:3128)=.
+   * *frontierlevel*: the value of *FRONTIER_LOG_LEVEL*, which is =warning= on default.
+   * *gcclocation*: the compiler gcc location with the default value of =<sitedir>/sw/lcg/releases/gcc:/cvmfs/sft.cern.ch/lcg/releases/gcc:/cvmfs/sft.cern.ch/lcg/contrib/gcc:/cvmfs/sft.cern.ch/lcg/external/gcc=, where =<sitedir>= will be replaced with the =SITEROOT= value.
+   * *gccversion*: the version of compiler *gcc*.Tthere is no default value.
+   * *isdebugprint*: True or False (default), where or not to print debug information.
+   * *latestrelease*: True or False (default), where or not to select the latest nightly release.
+   * *makeflags*: the control flag on env variable *MAKEFLAGS*. In case of *makeflags* equals
+      * =&lt;auto&gt;= or =&lt;automatic&gt;=, asetup will set *MAKEFLAGS* to =-j$ncores -l$nores=, where $nores is the number of cores on a machine;
+      * =&lt;none&gt;=, =none=, or =None=, asetup will keep the *MAKEFLAGS* current value;
+      *  otherwise, asetup will set *MAKEFLAGS* to the =makeflags= value.
+   * *nightliesarea*: the top directory of nightly releases, with the default value of =/cvmfs/atlas-nightlies.cern.ch/repo/sw=.
+   * *nightliesonly*: True or False (default), whether or not to search within nightly releases only.
+   * *noLcgReleaseBase*: True or False (default0, whether or not to set env variable *LCG_RELEASE_BASE*.
+   * *opt*: opt or dbg, one last part in the release platform.
+   * *os*: slc5, slc6, or centos7, the OS part in the release platform.
+   * *poolcondpath*: the path of POOL condition database, with the default value of =/cvmfs/atlas-condb.cern.ch/repo/conditions=.
+   * *printlevel*: the level of info printing: &lt;0:FATAL error; 0:Warning and basis msg; 1:config warning; 2:Verbose.
+   * *releasebase*: the full path of a release, including the branch directory.
+   * *releasesarea*: the top directory of stable releases, with the default value of =/cvmfs/atlas.cern.ch/repo/sw/software=.
+   * *setuprelease*: True or False, whether or not to set up a release. The default is True if a release is required.
+   * *silent*: True or False (default). If true, set *printlevel* to =-1=.
+   * *siteroot*: the path of envvar SITEROOT, not using the one under the release directory.
+   * *stableonly*: True or False (default), whether or not to search within stable releases only.
+   * *tags*: a list of comma-delimited tags, with the default empty value. It is equivalent to provide the tags in the command line.
+   * *tdaqarea*: the central location of external *tdaq* package, which is =/cvmfs/atlas.cern.ch/repo/sw/tdaq=.
+   * *tnsadmin*: the value of env variable *TNS_ADMIN* for machines at CERN, will try to set to =/eos/project/o/oracle/public/admin= if exists, then try =/afs/cern.ch/project/oracle/admin=.
+   * *traceEnvvar*: one env variable name to be traced, where it is set or changed in asetup.
+   * *userpriority*: True or False (default), whether or not  to set the user environment of section =[environment]= in user configuration file(s).
+
+
+---+ 6. Source Code and Release Notes
+
+---++ 6.1 Source Code
+
+The !AtlasSetup tool is mainly written in python. You can find the source code on [[https://gitlab.cern.ch/atlas-sit/asetup][gitlab]]
+
+---++ 6.2 Release Notes
+
+You can find the change log for each asetup version in the file [[https://gitlab.cern.ch/atlas-sit/asetup/blob/master/ChangeLog][ChangeLog]].
+
+<!-- MAJOR UPDATES
+For significant updates to the topic, consider adding your 'signature' (beneath this editing box) !-->
+-----
+*Major updates*:%BR%
+<!--Future editors should add their signatures beneath yours!-->
+-- Main.ShuweiYE - 2019-01-09
+%STOPINCLUDE%
